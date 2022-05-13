@@ -1,8 +1,12 @@
 import { CreateUserDTO } from "@modules/user/dtos/CreateUserDTO";
 import { IUsersRepository } from "@modules/user/repositories/IUsersRepository";
+import { hash } from "bcrypt";
 import { validate } from "class-validator";
+import { inject, injectable } from "tsyringe";
 
 import { AppError } from "@shared/errors/AppError";
+import { normalizeCpf, normalizePhone } from "@shared/utils/StringHelpers";
+import { getErrors } from "@shared/utils/ValidatorsHelpers";
 
 interface IRequest {
   name: string;
@@ -14,18 +18,11 @@ interface IRequest {
   phone: string;
 }
 
+@injectable()
 class CreateUserUseCase {
-  constructor(private readonly usersRepository: IUsersRepository) {}
-
-  // [X] Deve ser possível criar um User
-  // [X] Não deve ser possível criar com email repetido
-  // [X] Não deve ser possível criar com cpf repetido
-  // [X] Não deve ser possível criar se o password for diferente do confirmPassword
-  // [ ] Não deve ser possível criar com alguma info null
-  // [ ] Validar se o email é válido
-  // [ ] Validar se o CPF é válido
-  // [ ] Remover todos os caracteres diferentes de números do telefone
-  // [ ] Remover todos os caracteres diferentes de números do cpf
+  constructor(
+    @inject("UsersRepository") private readonly usersRepository: IUsersRepository
+  ) {}
 
   async execute({
     name,
@@ -36,30 +33,24 @@ class CreateUserUseCase {
     occupation,
     phone,
   }: IRequest): Promise<void> {
+    if (password !== confirmPassword) throw new AppError("As senhas devem ser iguais!");
+
     const userDto = new CreateUserDTO({
       name,
       email,
-      password,
-      cpf,
+      password: await hash(password, 8),
+      cpf: normalizeCpf(cpf),
       occupation,
-      phone,
+      phone: normalizePhone(phone),
     });
 
-    validate(userDto).then((errors) => {
-      // errors is an array of validation errors
-      if (errors.length > 0) {
-        console.log("validation failed. errors: ", errors);
-      } else {
-        console.log("validation succeed");
-      }
-    });
+    const errors = getErrors(await validate(userDto));
+    if (errors) throw new AppError("Erro no preenchimento dos dados", 400, errors);
 
-    if (password !== confirmPassword) throw new AppError("AS senhas devem ser iguais!");
-
-    const existentUserEmail = await this.usersRepository.findByEmail(email);
+    const existentUserEmail = await this.usersRepository.findByEmail(userDto.email);
     if (existentUserEmail) throw new AppError("Email já cadastrado!");
 
-    const existentUserCpf = await this.usersRepository.findByCpf(cpf);
+    const existentUserCpf = await this.usersRepository.findByCpf(userDto.cpf);
     if (existentUserCpf) throw new AppError("CPF já cadastrado!");
 
     await this.usersRepository.create(userDto);

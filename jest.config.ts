@@ -5,10 +5,8 @@ export default {
   clearMocks: true,
   coverageProvider: "v8",
   testMatch: ["**/*.spec.ts"],
+  preset: "ts-jest",
   bail: true,
-  transform: {
-    "^.+\\.(t|j)sx?$": ["@swc/jest"],
-  },
   moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, {
     prefix: "<rootDir>/src/",
   }),

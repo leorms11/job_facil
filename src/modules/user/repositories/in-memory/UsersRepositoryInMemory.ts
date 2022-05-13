@@ -31,16 +31,16 @@ class UsersRepositoryInMemory implements IUsersRepository {
     return user;
   }
 
-  async findByEmail(email: string): Promise<User | undefined> {
+  async findByEmail(email: string): Promise<User | null> {
     const user = this.users.find((user) => user.email === email);
 
-    return user;
+    return user ?? null;
   }
 
-  async findByCpf(cpf: string): Promise<User | undefined> {
+  async findByCpf(cpf: string): Promise<User | null> {
     const user = this.users.find((user) => user.cpf === cpf);
 
-    return user;
+    return user ?? null;
   }
 }
 

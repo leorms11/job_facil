@@ -1,7 +1,9 @@
+import "express-async-errors";
 import express from "express";
 
 import { globalErrorHandler } from "./middlewares/GlobalErrorHandler";
 import { router } from "./routes";
+import "@shared/infra/tsyringe";
 
 const app = express();
 

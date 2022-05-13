@@ -2,6 +2,7 @@ import "reflect-metadata";
 import { UsersRepositoryInMemory } from "@modules/user/repositories/in-memory/UsersRepositoryInMemory";
 
 import { AppError } from "@shared/errors/AppError";
+import { normalizeCpf } from "@shared/utils/StringHelpers";
 
 import { CreateUserUseCase } from "./CreateUserUseCase";
 
@@ -23,9 +24,9 @@ describe("Create User", () => {
       email: "teste@teste.com",
       password: "teste",
       confirmPassword: "teste",
-      cpf: "00000000000",
+      cpf: "476.719.240-40",
       occupation: "teste",
-      phone: "35999999999",
+      phone: "(35) 99876-5432",
     };
 
     await createUserUseCase.execute(requestData);
@@ -34,7 +35,7 @@ describe("Create User", () => {
       expect.arrayContaining([
         expect.objectContaining({
           email: requestData.email,
-          cpf: requestData.cpf,
+          cpf: normalizeCpf(requestData.cpf),
         }),
       ])
     );
@@ -55,19 +56,21 @@ describe("Create User", () => {
       email: "existent@email.com",
       password: "teste",
       confirmPassword: "teste",
-      cpf: "11111111111",
+      cpf: "201.525.530-37",
       occupation: "teste",
-      phone: "35999999999",
+      phone: "(35) 99876-5432",
     };
 
-    await expect(createUserUseCase.execute(requestData)).rejects.toThrowError(AppError);
+    await expect(createUserUseCase.execute(requestData)).rejects.toThrowError(
+      "Email já cadastrado!"
+    );
   });
 
   it("Should not be able to create an user within an already existent cpf", async () => {
     await usersRepository.create({
       name: "Already existent test",
-      email: "existent@email.com",
-      cpf: "99999999999",
+      email: "existent2@email.com",
+      cpf: "66645359047",
       phone: "35999999999",
       occupation: "Test",
       password: "test",
@@ -78,34 +81,29 @@ describe("Create User", () => {
       email: "teste2@teste.com",
       password: "teste",
       confirmPassword: "teste",
-      cpf: "99999999999",
+      cpf: "666.453.590-47",
       occupation: "teste",
-      phone: "35999999999",
+      phone: "(35) 99876-5432",
     };
 
-    await expect(createUserUseCase.execute(requestData)).rejects.toThrowError(AppError);
+    await expect(createUserUseCase.execute(requestData)).rejects.toThrowError(
+      "CPF já cadastrado!"
+    );
   });
 
   it("Should not be able to create an user within a password different of confirmPassword", async () => {
-    await usersRepository.create({
-      name: "Already existent test",
-      email: "existent@email.com",
-      cpf: "99999999999",
-      phone: "35999999999",
-      occupation: "Test",
-      password: "test",
-    });
-
     const requestData = {
       name: "Teste",
       email: "teste3@teste.com",
       password: "teste",
-      confirmPassword: "test",
-      cpf: "99999999911",
+      confirmPassword: "password_not_match",
+      cpf: "334.829.630-70",
       occupation: "teste",
-      phone: "35999999999",
+      phone: "(35) 99876-5432",
     };
 
-    await expect(createUserUseCase.execute(requestData)).rejects.toThrowError(AppError);
+    await expect(createUserUseCase.execute(requestData)).rejects.toThrowError(
+      "As senhas devem ser iguais!"
+    );
   });
 });
